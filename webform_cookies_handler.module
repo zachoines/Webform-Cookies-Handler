@@ -1,4 +1,5 @@
 <?php
+use Drupal\webform\WebformInterface;
 
 /**
  * @file
@@ -14,4 +15,29 @@ function webform_cookies_handler_theme() {
       'variables' => ['settings' => NULL, 'handler' => []],
     ],
   ];
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ */
+function webform_cookies_handler_webform_insert(WebformInterface $webform) {
+  /** @var \Drupal\webform\Plugin\WebformHandlerManagerInterface $handler_manager */
+  $handler_manager = \Drupal::service('plugin.manager.webform.handler');
+
+  // Create webform handler.
+  $handler_configuration = [
+    'id' => 'webform_cookies_handler',
+    'label' => 'Webform Cookies',
+    'handler_id' => 'webform_cookies_handler',
+    'status' => 1,
+    'weight' => 0,
+    'settings' => [],
+  ];
+  $handler = $handler_manager->createInstance('webform_cookies_handler', $handler_configuration);
+
+  // Must set original id so that the webform can be resaved.
+  $webform->setOriginalId($webform->id());
+
+  // Add webform handler which triggers Webform::save().
+  $webform->addWebformHandler($handler);
 }
