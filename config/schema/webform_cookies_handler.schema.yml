@@ -1,0 +1,10 @@
+webform.handler.cookies:
+  type: mapping
+  label: Cookies
+  mapping:
+    message:
+      label: Message
+      type: string
+    debug:
+      type: boolean
+      label: 'Enable debugging'

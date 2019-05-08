@@ -1,0 +1,17 @@
+<?php
+
+/**
+ * @file
+ * searches for Cookies and adds to them to a webform'
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function webform_cookies_handler_theme() {
+  return [
+    'webform_handler_cookies_summary' => [
+      'variables' => ['settings' => NULL, 'handler' => []],
+    ],
+  ];
+}
