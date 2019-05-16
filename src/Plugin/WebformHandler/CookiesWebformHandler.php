@@ -72,6 +72,8 @@ class CookiesWebformHandler extends WebformHandlerBase {
     ];
   }
 
+
+
   /**
    * {@inheritdoc}
    */

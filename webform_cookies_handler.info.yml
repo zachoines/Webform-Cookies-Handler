@@ -1,4 +1,4 @@
-name: 'CSOM Webform Cookies'
+name: 'Webform Cookies Handler'
 type: module
 description: 'Allows for cookies to be added to a webform on form submission.'
 package: 'CSOM'
@@ -11,3 +11,4 @@ version: '8.x-5.2'
 core: '8.x'
 project: 'webform'
 datestamp: 1553768595
+configure: webform_cookies_handler.admin_settings

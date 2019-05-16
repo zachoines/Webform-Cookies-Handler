@@ -1,0 +1,7 @@
+webform_cookies_handler.admin_settings:
+  path: '/admin/config/development/webform_cookies_handler'
+  defaults:
+    _form: '\Drupal\webform_cookies_handler\Form\WebformCookiesHandlerConfigurationForm'
+    _title: 'Webform Cookies configuration Settings'
+  requirements:
+    _permission: 'administer site configuration'
