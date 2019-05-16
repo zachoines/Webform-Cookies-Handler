@@ -5,12 +5,6 @@ namespace Drupal\webform_cookies_handler\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
-use Drupal\webform\Plugin\WebformHandlerBase;
-use Drupal\webform\WebformInterface;
-use Drupal\webform\WebformSubmissionConditionsValidatorInterface;
-use Drupal\webform\WebformSubmissionInterface;
-use Drupal\webform\WebformTokenManagerInterface;
-
 /**
  * Defines a form that configures forms module settings.
  */
@@ -54,19 +48,33 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
       $default_all_webforms = 0;
     }
 
+    $default_new_submissions_cookies = $config->get('default_new_submissions_cookies');
+    if (is_string($default_new_submissions_cookies)) { 
+      $default_new_submissions_cookies =  $default_new_submissions_cookies;
+    } else { 
+      $default_new_submissions_cookies = 'Enter comma separated list here...';
+    }
+
+    $default_on_new_submissions = $config->get('default_on_new_submissions');
+    if (is_numeric($default_on_new_submissions)) { 
+      $default_on_new_submissions =  $default_on_new_submissions; 
+    } else { 
+      $default_on_new_submissions = 0;
+    }
+
     $form['webform_cookies_handler_admin'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Advanced Webform Cookies Settings'),
-        '#description' => t('Site wide webform cookie settings'),
+      '#type' => 'fieldset',
+      '#title' => t('Advanced Webform Cookies Settings'),
+      '#description' => t('Site wide webform cookie settings'),
     );
     
     $form['webform_cookies_handler_admin']['apply_to_all_webforms'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Apply Webform Cookies Handler to All Webforms.'),
-        '#description' => t('This setting will retroactively apply the handler to all webforms.
-        However, it will not overwrite Webforms already configured with Webform Cookies Handler.'),
-        '#default_value' => $default_all_webforms,
-        '#required' => FALSE,
+      '#type' => 'checkbox',
+      '#title' => t('Apply Webform Cookies Handler to All Webforms.'),
+      '#description' => t('This setting will retroactively apply the handler to all webforms.
+      However, it will not overwrite Webforms already configured with Webform Cookies Handler.'),
+      '#default_value' => $default_all_webforms,
+      '#required' => FALSE,
     );
 
     $form['webform_cookies_handler_admin']['default_cookies'] = array(
@@ -74,6 +82,25 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
       '#title' => t('Default Cookies to be added to webforms'), 
       '#description' => t('Apply Webforms Cookies Handler to all Webforms retroactively with these cookies set as default.'),
       '#default_value' => $default_cookies,
+      '#size' => 60, 
+      '#maxlength' => 128, 
+      '#required' => FALSE,
+    );
+
+    $form['webform_cookies_handler_admin']['default_on_new_submissions'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Apply Default Webform Cookies Handler for all new Webforms.'),
+      '#description' => t('This setting will pro-actively apply the handler to all future webforms.
+      However, these webforms can always be reconfigured and customized for the future.'),
+      '#default_value' => $default_on_new_submissions,
+      '#required' => FALSE,
+    );
+
+    $form['webform_cookies_handler_admin']['default_new_submissions_cookies'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('Default Cookies to be added to newly created webforms'), 
+      '#description' => t('Apply Default Webform Cookies for all new Webforms.'),
+      '#default_value' => $default_new_submissions_cookies,
       '#size' => 60, 
       '#maxlength' => 128, 
       '#required' => FALSE,
@@ -97,6 +124,16 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
     # Set user specified default Cookies
     $this->config('webform_cookies_handler.settings')
     ->set('default_cookies', $values['default_cookies'])
+    ->save();
+
+    # Set the user specified site-wide cookies configuration
+    $this->config('webform_cookies_handler.settings')
+      ->set('default_on_new_submissions', $values['default_on_new_submissions'])
+      ->save();
+
+    # Set user specified default Cookies
+    $this->config('webform_cookies_handler.settings')
+    ->set('default_new_submissions_cookies', $values['default_new_submissions_cookies'])
     ->save();
 
     # If the user updated site wide webform cookie settings
@@ -140,23 +177,27 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
       $webform = \Drupal::entityTypeManager()->getStorage('webform')->load($id);
       //ksm($webform->status());
       if ($webform) {
-        ksm($id);
+    
         // Must set original id so that the webform can be resaved.
         $webform->setOriginalId($webform->id());
 
 
         $handlers = $webform->getHandlers();
+        $already_there = FALSE;
 
         # Check if the handler already exists in this webform
         foreach ($handlers as $handle) {
           if ($handle instanceof CookiesWebformHandler) {
             $webform->updateWebformHandler($handler);
-            return;
+            $already_there = TRUE;
+            break;
           }
         }
 
         # Add webform handler which triggers Webform::save().
-        $webform->addWebformHandler($handler);
+        if (!$already_there) {
+          $webform->addWebformHandler($handler);
+        }
       }
     }
 

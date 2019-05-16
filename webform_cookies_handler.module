@@ -19,8 +19,6 @@ function webform_cookies_handler_theme() {
   ];
 }
 
-
-
 /**
  * Implements hook_ENTITY_TYPE_insert().
  */
@@ -28,32 +26,54 @@ function webform_cookies_handler_theme() {
 function webform_cookies_handler_webform_insert(WebformInterface $webform) {
   /** @var \Drupal\webform\Plugin\WebformHandlerManagerInterface $handler_manager */
   // Create webform handler.
-  // TODO: Pull from module configuration settings
-  $default_cookies = '_gid, _gad';
-  $handler_manager = \Drupal::service('plugin.manager.webform.handler');
-  
-  $handler_configuration = [
-    'id' => 'webform_cookies',
-    'label' => 'webform_cookies',
-    'handler_id' => 'webform_cookies',
-    'status' => 1,
-    'weight' => 0,
-    'settings' => array(
-      'cookies' => $default_cookies,
-      'string_matching' => FALSE,
-      'tokens' => [],
-    ),
+  $config = \Drupal::config('webform_cookies_handler.settings');
+
+  $default_on_new_submissions = $config->get('default_on_new_submissions');
+  if (is_numeric($default_on_new_submissions)) { 
+    $default_on_new_submissions =  $default_on_new_submissions; 
+  } else { 
+    $default_on_new_submissions = 0;
+  }
+
+  # If every new webform insertion should have default values
+  if ($default_on_new_submissions) {
+    # Setup defaults
+    $default_new_submissions_cookies = $config->get('default_new_submissions_cookies');
+    if (is_string($default_new_submissions_cookies)) { 
+      $default_new_submissions_cookies =  $default_new_submissions_cookies;
+    } else { 
+      $default_new_submissions_cookies = 'Enter comma separated list here...';
+    }
+
+    # Tokenize the Cookies
+    $cookies = $default_new_submissions_cookies;
+    $cookies = preg_replace('/\s+/', '', $cookies);
+    $tokens = explode(',', $cookies);
     
-  ];
-  
-  $handler = $handler_manager->createInstance('Webform Cookies', $handler_configuration);
-  
+    # Create and configure handlers
+    $handler_manager = \Drupal::service('plugin.manager.webform.handler');
+    
+    $handler_configuration = [
+      'id' => 'webform_cookies',
+      'label' => 'webform_cookies',
+      'handler_id' => 'webform_cookies',
+      'status' => 1,
+      'weight' => 0,
+      'settings' => array(
+        'cookies' => $default_new_submissions_cookies,
+        'string_matching' => FALSE,
+        'tokens' => $tokens,
+      ),
+      
+    ];
+    
+    $handler = $handler_manager->createInstance('Webform Cookies', $handler_configuration);
+    
 
-  // Must set original id so that the webform can be resaved.
-  $webform->setOriginalId($webform->id());
+    // Must set original id so that the webform can be resaved.
+    $webform->setOriginalId($webform->id());
 
-  // Add webform handler which triggers Webform::save().
-  $webform->addWebformHandler($handler);
-
+    // Add webform handler which triggers Webform::save().
+    $webform->addWebformHandler($handler);
+  }
 }
-
