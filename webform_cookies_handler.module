@@ -105,7 +105,6 @@ function webform_cookies_handler_webform_insert(WebformInterface $webform) {
 
     // Add webform handler which triggers Webform::save().
     $webform->addWebformHandler($handler);
-    
-    
+
   }
 }
