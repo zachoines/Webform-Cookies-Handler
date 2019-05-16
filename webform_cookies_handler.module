@@ -1,6 +1,4 @@
-
 <?php
-use Drupal\webform_cookies_handler\Plugin\WebformHandler\CookiesWebformHandler;
 use Drupal\webform\WebformInterface;
 
 /**

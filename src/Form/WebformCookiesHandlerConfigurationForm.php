@@ -1,6 +1,7 @@
 <?php
 
 namespace Drupal\webform_cookies_handler\Form;
+use Drupal\webform\Plugin\WebformHandler\RemotePostWebformHandler;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -62,6 +63,23 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
       $default_on_new_submissions = 0;
     }
 
+    # Defaults for URL forwarding settings
+    $default_url_checkbox = $config->get('default_url_checkbox');
+    if (is_numeric($default_url_checkbox)) { 
+      $default_url_checkbox =  $default_url_checkbox;
+    } else { 
+      $default_url_checkbox = 0;
+    }
+
+    $default_forwarding_url  = $config->get('default_forwarding_url');
+    if (is_string($default_forwarding_url)) { 
+      $default_forwarding_url  =  $default_forwarding_url ;
+    } else { 
+      $default_forwarding_url  = 'Enter url here...';
+    }
+
+    
+
     $form['webform_cookies_handler_admin'] = array(
       '#type' => 'fieldset',
       '#title' => t('Advanced Webform Cookies Settings'),
@@ -106,6 +124,32 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
       '#required' => FALSE,
       
     );
+
+    # Additional settings for adding default automatic forwarding to all webforms
+    $form['webform_cookies_handler_additional_admin_settings'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Additional Webform default forwarding Settings'),
+      '#description' => t('Settings for applying URL forwarding to webforns'),
+    );
+
+    $form['webform_cookies_handler_additional_admin_settings']['default_url_checkbox'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Retroactively Apply Default URL forwarding for all webforms'),
+      '#description' => t('retroactively apply default URL forwarding for all webforms. Will not overwrite webforms already configured with the URL forwarding handler.'),
+      '#default_value' => $default_url_checkbox,
+      '#required' => FALSE,
+    );
+
+    $form['webform_cookies_handler_additional_admin_settings']['default_forwarding_url'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('Default Fowarding URL'), 
+      '#description' => t('The URL to be retroactively applied for all webforms.'),
+      '#default_value' => $default_forwarding_url,
+      '#size' => 60, 
+      '#maxlength' => 128, 
+      '#required' => FALSE,
+      
+    );
     
     return parent::buildForm($form, $form_state);
   }
@@ -136,15 +180,31 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
     ->set('default_new_submissions_cookies', $values['default_new_submissions_cookies'])
     ->save();
 
+
+    # Set URL forwarding and forwarding URL 
+    $this->config('webform_cookies_handler.settings')
+    ->set('default_url_checkbox', $values['default_url_checkbox'])
+    ->save();
+
+    $this->config('webform_cookies_handler.settings')
+    ->set('default_forwarding_url', $values['default_forwarding_url'])
+    ->save();
+   
+
     # If the user updated site wide webform cookie settings
     if ($values['apply_to_all_webforms']) {
-      $this->attach_handler_to_all_webforms($values['default_cookies']);
+      $this->attach_webform_cookies_handler_to_all_webforms($values['default_cookies']);
     }
+
+    if ($values['default_url_checkbox']) {
+      $this->attach_webform_url_forwarding_handler_to_all_webforms($values['default_forwarding_url'], $values['default_forwarding_url'], $values['default_forwarding_url']);
+    }
+
     parent::submitForm($form, $form_state);
   }
 
   # Add Webform_Cookies handler to all webforms
-  private function attach_handler_to_all_webforms($default_cookies) {
+  private function attach_webform_cookies_handler_to_all_webforms($default_cookies) {
 
     $ids = $this->get_all_webform_ids();
 
@@ -175,7 +235,7 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
     # Now going to open each webform one-by-one and add cookies handler with default config
     foreach ($ids as $index => $id) {
       $webform = \Drupal::entityTypeManager()->getStorage('webform')->load($id);
-      //ksm($webform->status());
+
       if ($webform) {
     
         // Must set original id so that the webform can be resaved.
@@ -213,6 +273,60 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
     
     if ($result) {
       return $result->fetchAllKeyed(0,0);
+    }
+  }
+
+
+  private function attach_webform_url_forwarding_handler_to_all_webforms($completed_url, $updated_url, $deleted_url) {
+    $ids = $this->get_all_webform_ids();
+
+
+    # Set up our Webform Cookies Handler Config
+    $handler_configuration = [
+      'id' => 'remote_post',
+      'label' => 'Remote Post',
+      'handler_id' => 'remote_post',
+      'status' => 1,
+      'weight' => 0,
+      'settings' => array(
+        'completed_url' => $completed_url,
+        'updated_url' => $updated_url,
+        'deleted_url' => $deleted_url,
+      ),
+      
+    ];
+
+    $handler_manager = \Drupal::service('plugin.manager.webform.handler');
+    $handler = $handler_manager->createInstance('remote_post', $handler_configuration);
+
+
+    # Now going to open each webform one-by-one and add cookies handler with default config
+    foreach ($ids as $index => $id) {
+      $webform = \Drupal::entityTypeManager()->getStorage('webform')->load($id);
+      //ksm($webform->status());
+      if ($webform) {
+    
+        // Must set original id so that the webform can be resaved.
+        $webform->setOriginalId($webform->id());
+
+
+        $handlers = $webform->getHandlers();
+        $already_there = FALSE;
+
+        # Check if the handler already exists in this webform
+        foreach ($handlers as $handle) {
+          if ($handle instanceof RemotePostWebformHandler) {
+            $webform->updateWebformHandler($handler);
+            $already_there = TRUE;
+            break;
+          }
+        }
+
+        # Add webform handler which triggers Webform::save().
+        if (!$already_there) {
+          $webform->addWebformHandler($handler);
+        }
+      }
     }
   }
 }
