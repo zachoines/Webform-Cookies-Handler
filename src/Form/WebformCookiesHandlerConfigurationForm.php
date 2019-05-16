@@ -102,9 +102,8 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
 
     $form['webform_cookies_handler_admin']['default_cookies_fieldset']  = array(
       '#type' => 'fieldset',
-      '#title' => t('Apply Webform Cookies Handler to All Webforms.'),
-      '#description' => t('This setting will retroactively apply the handler to all webforms.
-      However, it will not overwrite Webforms already configured with Webform Cookies Handler.'),
+      '#title' => t('Apply Webform Cookies Handler to Existing Webforms.'),
+      '#description' => t('This setting will retroactively apply the handler for existing webforms. However, it will not overwrite Webforms already configured with Webform Cookies Handler.'),
     );
     
     
@@ -156,8 +155,8 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
 
     $form['webform_cookies_handler_additional_admin_settings']['default_url_checkbox_fieldset']  = array(
       '#type' => 'fieldset',
-      '#title' => t('Retroactively Apply Default URL forwarding for all webforms'),
-      '#description' => t('Retroactively apply default URL forwarding for all webforms. Will not overwrite webforms already configured with the URL forwarding handler.'),
+      '#title' => t('Retroactively Apply Default URL Forwarding for Existing Webforms'),
+      '#description' => t('Retroactively apply default URL forwarding for existing webforms. Will not overwrite webforms already configured with the URL forwarding handler.'),
     );
 
     $form['webform_cookies_handler_additional_admin_settings']['default_url_checkbox_fieldset']['default_url_checkbox'] = array(

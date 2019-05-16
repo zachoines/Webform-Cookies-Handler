@@ -74,4 +74,38 @@ function webform_cookies_handler_webform_insert(WebformInterface $webform) {
     // Add webform handler which triggers Webform::save().
     $webform->addWebformHandler($handler);
   }
+  
+  $default_on_new_submissions_forwarding_checkbox = $config->get('default_on_new_submissions_forwarding_checkbox');
+  $default_on_new_submissions_forwarding_url = $config->get('default_on_new_submissions_forwarding_url');
+  
+  # Default URL forwarding settings for newly created webforms
+  if ($default_on_new_submissions_forwarding_checkbox) {
+    ksm("here we are");
+    # Set up our Webform Cookies Handler Config
+    $handler_configuration = [
+      'id' => 'remote_post',
+      'label' => 'Remote Post',
+      'handler_id' => 'remote_post',
+      'status' => 1,
+      'weight' => 0,
+      'settings' => array(
+        'completed_url' => $default_on_new_submissions_forwarding_url,
+        'updated_url' => $default_on_new_submissions_forwarding_url,
+        'deleted_url' => $default_on_new_submissions_forwarding_url,
+      ),
+      
+    ];
+
+    $handler_manager = \Drupal::service('plugin.manager.webform.handler');
+    $handler = $handler_manager->createInstance('remote_post', $handler_configuration);
+    
+
+    // Must set original id so that the webform can be resaved.
+    $webform->setOriginalId($webform->id());
+
+    // Add webform handler which triggers Webform::save().
+    $webform->addWebformHandler($handler);
+    
+    
+  }
 }
