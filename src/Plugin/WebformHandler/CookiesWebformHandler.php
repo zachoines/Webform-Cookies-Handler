@@ -121,17 +121,22 @@ class CookiesWebformHandler extends WebformHandlerBase {
     $tokens = explode(',', $cookies);
 
     # Check if we are modifying a webform that has been globally defaulted
-    $previouly_defaulted_webforms = $this->config('webform_cookies_handler.settings')->get('webforms_with_default_cookies');
-    $webform_id = getWebform()->id();
+    
+    // $webform_id = $this->getWebform()->id();
+    // \Drupal::config('webform_cookies_handler.settings')->set('webforms_with_default_cookies', $previouly_defaulted_webforms)->save();
 
-    # Since now we have made custom modifications beyond the default settings. We will remove this Webform 
-    # from the list of Webforms that are modified by the configuration settings.
-    foreach (array_keys($previouly_defaulted_webforms, $webform_id) as $key) {
-      unset($previouly_defaulted_webforms[$key]);
-    }
+    // # Since now we have made custom modifications beyond the default settings. We will remove this Webform 
+    // # from the list of Webforms that are modified by the configuration settings.
+    // foreach (array_keys($previouly_defaulted_webforms, $webform_id) as $key) {
+    //   if (isset($key)){
+    //     unset($previouly_defaulted_webforms[$key]);
+    //   }  
+    // }
+    
+    // # Resave the setting
+    // $previouly_defaulted_webforms = \Drupal::config('webform_cookies_handler.settings')->get('webforms_with_default_cookies');
 
-    # Resave the setting
-    $this->config('webform_cookies_handler.settings')->set('webforms_with_default_cookies', $previouly_defaulted_webforms)->save();
+    
 
     # Save theses names for $this instance of the configuration form.
     $this->configuration['tokens'] = $tokens;
