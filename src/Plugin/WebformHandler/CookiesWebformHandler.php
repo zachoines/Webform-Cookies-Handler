@@ -96,10 +96,11 @@ class CookiesWebformHandler extends WebformHandlerBase {
       '#type' => 'details',
       '#title' => $this->t('Advanced Options'),
     ];
+    
     $form['Advanced_Options']['string_matching'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('String Matching on Cookies'),
-      '#description' => $this->t("If checked, cookies whose stings names match closely will be added to webform. For example '_example123' entry will be marked same as '_example'."),
+      '#description' => $this->t("If checked, cookies whose stings names match closely will be added to webform. For example '_example123' cookie will be included when 'example' is entered above."),
       '#return_value' => TRUE,
       '#default_value' => $this->configuration['string_matching'],
     ];
@@ -113,9 +114,26 @@ class CookiesWebformHandler extends WebformHandlerBase {
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     parent::submitConfigurationForm($form, $form_state);
     $this->configuration['cookies'] = $form_state->getValue('cookies');
+
+    # Get the individual names of the cookies
     $cookies = $form_state->getValue('cookies');
     $cookies = preg_replace('/\s+/', '', $cookies);
     $tokens = explode(',', $cookies);
+
+    # Check if we are modifying a webform that has been globally defaulted
+    $previouly_defaulted_webforms = $this->config('webform_cookies_handler.settings')->get('webforms_with_default_cookies');
+    $webform_id = getWebform()->id();
+
+    # Since now we have made custom modifications beyond the default settings. We will remove this Webform 
+    # from the list of Webforms that are modified by the configuration settings.
+    foreach (array_keys($previouly_defaulted_webforms, $webform_id) as $key) {
+      unset($previouly_defaulted_webforms[$key]);
+    }
+
+    # Resave the setting
+    $this->config('webform_cookies_handler.settings')->set('webforms_with_default_cookies', $previouly_defaulted_webforms)->save();
+
+    # Save theses names for $this instance of the configuration form.
     $this->configuration['tokens'] = $tokens;
     $this->configuration['string_matching'] = (bool) $form_state->getValue('string_matching');
   }
@@ -147,7 +165,8 @@ class CookiesWebformHandler extends WebformHandlerBase {
         }
       }
       if ($string_matching){
-        ksm("I am working");
+        // TODO: Advanced string matching
+        //ksm("I am working");
       }
 
     }
