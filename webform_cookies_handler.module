@@ -80,7 +80,7 @@ function webform_cookies_handler_webform_insert(WebformInterface $webform) {
   
   # Default URL forwarding settings for newly created webforms
   if ($default_on_new_submissions_forwarding_checkbox) {
-    ksm("here we are");
+    
     # Set up our Webform Cookies Handler Config
     $handler_configuration = [
       'id' => 'remote_post',

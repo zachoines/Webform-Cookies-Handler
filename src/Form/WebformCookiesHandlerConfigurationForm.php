@@ -73,6 +73,7 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
     }
 
     $default_forwarding_url  = $config->get('default_forwarding_url');
+    
     if (is_string($default_forwarding_url)) { 
       $default_forwarding_url  =  $default_forwarding_url ;
     } else { 
@@ -227,7 +228,17 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
       ->save();
 
 
+
     # Set URL forwarding and forwarding URL 
+
+    $this->config('webform_cookies_handler.settings')
+      ->set('default_forwarding_url', $values['default_forwarding_url'])
+      ->save();
+
+    $this->config('webform_cookies_handler.settings')
+      ->set('default_url_checkbox', $values['default_url_checkbox'])
+      ->save();
+
     $this->config('webform_cookies_handler.settings')
       ->set('default_on_new_submissions_forwarding_checkbox', $values['default_on_new_submissions_forwarding_checkbox'])
       ->save();
@@ -249,7 +260,12 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
 
     if ($values['default_url_checkbox']) {
       $this->attach_webform_url_forwarding_handler_to_all_webforms($values['default_forwarding_url'], $values['default_forwarding_url'], $values['default_forwarding_url']);
+    } else {
+      // Remove default forwarding on affected programs
+      $this->update_defaulted_webform_forwarding_url();
     }
+
+    
 
     parent::submitForm($form, $form_state);
   }
@@ -448,11 +464,45 @@ class WebformCookiesHandlerConfigurationForm extends ConfigFormBase {
         }
       }
     }
+
+    # reset our running list of webforms with default cookies
+    $this->config('webform_cookies_handler.settings')->set('webforms_with_default_cookies', NULL)->save();
   }
 
-  private function update_defaulted_webform_forwarding_url(){
-    $this->config('webform_cookies_handler.settings');
+  # Disable default site-wide form forwarding settings by unsetting the handler on affected webforms.
+  private function update_defaulted_webform_forwarding_url() {
+    $previouly_defaulted_webforms = $this->config('webform_cookies_handler.settings')->get('webforms_with_default_forwarding');
 
+
+    if (!isset($previouly_defaulted_webforms)) {
+      
+      # There is nothing to do here
+      return;
+    
+    } else {
+      foreach ($previouly_defaulted_webforms as $id) {
+        $webform = \Drupal::entityTypeManager()->getStorage('webform')->load($id);
+
+        if ($webform) {
+          
+          // Must set original id so that the webform can be resaved.
+          $webform->setOriginalId($webform->id());
+
+          $handlers = $webform->getHandlers();
+          
+          # Remove handler
+          foreach ($handlers as $handle) {
+            if ($handle instanceof RemotePostWebformHandler) {
+              $webform->deleteWebformHandler($handle);
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    # reset our running list of webforms with default forwarding
+    $this->config('webform_cookies_handler.settings')->set('webforms_with_default_forwarding', NULL)->save();
   }
 
   # Returns an array of all webform id's
